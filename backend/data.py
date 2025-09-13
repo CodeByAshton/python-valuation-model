@@ -2,9 +2,7 @@
 import pandas as pd
 import datetime
 import yfinance as yf
-
-from backend.schema import ForecastAssumptions, DiscountInputs
-from schema import HistoricalFinancials
+from schema import HistoricalFinancials, ForecastAssumptions, DiscountInputs
 
 userInput = "TSLA"
 ticker = yf.Ticker(userInput)
