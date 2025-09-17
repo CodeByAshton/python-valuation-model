@@ -3,6 +3,8 @@ import pandas as pd
 import datetime
 import yfinance as yf
 from schema import HistoricalFinancials, ForecastAssumptions, DiscountInputs
+import json
+import os
 
 userInput = "TSLA"
 ticker = yf.Ticker(userInput)
@@ -24,6 +26,20 @@ def cleandata(dataframe):
     dataframe.index = dataframe.index.str.replace(' ', '_')
     dataframe = dataframe.apply(pd.to_numeric, errors="coerce").fillna(0)
     return dataframe
+
+# Saving Data to a JSON, creating JSON if not available
+def save_object_to_json(obj, path: str):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if hasattr(obj, "model_dump"):
+        obj = obj.model_dump()
+    elif hasattr(obj, "dict"):
+        obj = obj.dict()
+    elif hasattr(obj, "__dict__"):
+        obj = obj.__dict__
+
+    with open(path, "w") as f:
+        json.dump(obj, f, indent=4)
+
 
 # turns a pandas data series into a dictionary
 def createdict(s: pd.Series) -> dict[int, float]:
@@ -126,13 +142,13 @@ def assumptions(company_financials):
 
     # Calculating revenue growth rate
     revenue_series = pd.Series(company_financials.revenue).sort_index()
-    growth_rates = revenue_series.pct_change().dropna()
+    revenue_series = revenue_series[revenue_series != 0]
+    growth_rates = revenue_series.pct_change().replace([float("inf"), float("-inf")], pd.NA).dropna()
     growth_rate = growth_rates.mean()
 
     # Calculating EBIT Margin
     ebit_series = pd.Series(company_financials.ebit).sort_index()
-    ebit_margins = revenue_series - ebit_series
-    ebit_margins = ebit_margins.pct_change().dropna()
+    ebit_margins = (ebit_series / revenue_series).replace([float("inf"), float("-inf")], pd.NA).dropna()
     ebit_margin = ebit_margins.mean()
 
     # Dep / Sales
@@ -211,3 +227,9 @@ def discountdata(company_data,assumption_data):
 company_obj = financials(income_stmt,cash_flow,balance_sheet)
 assumptions_obj = assumptions(company_obj)
 discount_obj = discountdata(company_obj,assumptions_obj)
+
+save_object_to_json(discount_obj,"data/discount_data.json")
+save_object_to_json(company_obj,"data/company_data.json")
+save_object_to_json(assumptions_obj,"data/assumptions_data.json")
+
+print(assumptions_obj)
