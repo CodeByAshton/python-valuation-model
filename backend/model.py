@@ -145,7 +145,7 @@ class Forecaster(DataPath):
             revenue_series_forecasted = self._revenue_cache
 
         capex_pct = self.assumptions_data['capex_pct']
-        forecast_capex: dict[int,float] = {}
+        forecast_capex: Dict[int,float] = {}
 
         for i, _ in enumerate(revenue_series_forecasted.keys()):
             forecast_capex[self.initial_year + i + 1] = revenue_series_forecasted[self.initial_year + i + 1] * capex_pct
